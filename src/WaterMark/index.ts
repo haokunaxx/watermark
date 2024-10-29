@@ -15,6 +15,10 @@ const defaultOptions: Omit<WatermarkOptions, 'getContainer'> = {
   },
 };
 
+function isNullOrUndefined(val: any): val is (undefined | null) {
+  return val === undefined || val === null
+}
+
 function parseNumber(val: string | undefined | number, defVal: number | undefined) {
   if (!val) {
     return defVal as number
@@ -158,7 +162,7 @@ export default class Watermark {
 
   public options: Required<WatermarkOptions> | null
   public watermarkEl: HTMLElement | null = null
-  
+
   constructor(options: WatermarkOptions) {
     this.options = this.mergeOptions(options)
   }
@@ -166,7 +170,7 @@ export default class Watermark {
   /**
    * 绘制水印，在调用之前如果已经绘制过水印则会先移除之前的水印
    */
-   draw = async(newOptions?: WatermarkOptions) => {
+  draw = async (newOptions?: WatermarkOptions) => {
     if (newOptions) {
       this.options = this.mergeOptions(newOptions)
     }
@@ -231,7 +235,7 @@ export default class Watermark {
   /**
    * 监测水印是否被移除和修改
    */
-  private observe = () =>  {
+  private observe = () => {
     if (!this.mutationObserver) {
       if (!this.watermarkEl) return;
       this.mutationObserver = new MutationObserver((mutations) => {
@@ -286,7 +290,11 @@ export default class Watermark {
 
     mergedOptions['offset'] = [
       parseNumber(mergedOptions?.offset?.[0], defaultOptions?.offset?.[0]) as number,
-      parseNumber(mergedOptions?.offset?.[1] || mergedOptions?.offset?.[0], defaultOptions?.offset?.[1]) as number,
+      parseNumber(
+        isNullOrUndefined(mergedOptions?.offset?.[1]) 
+          ? mergedOptions?.offset?.[0] 
+          : mergedOptions?.offset?.[1], 
+        defaultOptions?.offset?.[1]) as number,
     ]
     return mergedOptions
   }

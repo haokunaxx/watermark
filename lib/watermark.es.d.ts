@@ -49,7 +49,7 @@ export declare interface WatermarkOptions {
         fontWeight?: string;
     };
     gap?: [number, number];
-    offset?: [number, number];
+    offset?: [number, number] | [number];
     getContainer: () => HTMLElement | null;
 }
 

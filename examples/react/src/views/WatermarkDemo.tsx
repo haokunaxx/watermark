@@ -19,7 +19,7 @@ export function WatermarkDemo() {
     '哈啰 hello hi Halo 哈喽',
     '你好我是？？',
     '你好我有一个帽衫'])
-  const [offset, setOffset] = useState<[number, number]>([0, 0])
+  const [offset, setOffset] = useState<[number, number] | [number]>([0, 0])
 
   const watermarkRef = useRef<{
     draw: () => void
@@ -41,7 +41,9 @@ export function WatermarkDemo() {
   }
 
   const moveWatermark = () => {
+    // setOffset([100, 100])
     setOffset([100, 0])
+    // setOffset([100])
   }
   return <WaterMark ref={watermarkRef}
     // {
