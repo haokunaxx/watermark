@@ -1,4 +1,4 @@
-export interface WaterMarkOptions{
+export interface WatermarkOptions{
   zIndex?: string | number
   width?: number
   height?: number

@@ -10,8 +10,8 @@ export default defineConfig({
     outDir: 'dist',
     lib: {
       entry: 'src/index.ts',
-      name: 'WaterMark',
-      fileName: (format) => `WaterMark.${format}.js`
-    }    
+      name: 'Watermark',
+      fileName: (format) => `watermark.${format}.js`
+    }
   }
 })

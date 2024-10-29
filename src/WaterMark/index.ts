@@ -1,6 +1,6 @@
-import { WaterMarkOptions } from "./type";
+import { WatermarkOptions } from "./type";
 
-const defaultOptions = {
+const defaultOptions: Omit<WatermarkOptions, 'getContainer'> = {
   zIndex: 999999,
   rotate: -20,
   gap: [24, 24],
@@ -28,7 +28,7 @@ function parseNumber(val: string | undefined | number, defVal: number | undefine
   return isNaN(parseRes) ? defVal : parseRes
 }
 
-export function getWaterMarkBase64Url(options: Required<WaterMarkOptions>) {
+function getWatermarkBase64Url(options: Required<WatermarkOptions>) {
   const { image, gap, rotate } = options
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')!
@@ -82,7 +82,7 @@ export function getWaterMarkBase64Url(options: Required<WaterMarkOptions>) {
 
   // 用 options 中的 content 生成文字水印
   const drawText = () => {
-    const { content, rotate, fontStyle, textAlign } = options as Required<WaterMarkOptions & { content: string[] }>
+    const { content, rotate, fontStyle, textAlign } = options as Required<WatermarkOptions & { content: string[] }>
     const { fontFamily, fontSize, fontWeight, color } = fontStyle
     const realFontSize = parseInt(fontSize!) || 16
 
@@ -108,7 +108,7 @@ export function getWaterMarkBase64Url(options: Required<WaterMarkOptions>) {
     })
 
     return Promise.resolve({
-      waterMarkBase64Url: canvas.toDataURL(),
+      watermarkBase64Url: canvas.toDataURL(),
       width,
       height
     })
@@ -117,7 +117,7 @@ export function getWaterMarkBase64Url(options: Required<WaterMarkOptions>) {
   // 用 options 中的 image 生成图片水印
   const drawImage = () => {
     return new Promise<{
-      waterMarkBase64Url: string
+      watermarkBase64Url: string
       width: number
       height: number
     }>(resolve => {
@@ -125,7 +125,7 @@ export function getWaterMarkBase64Url(options: Required<WaterMarkOptions>) {
       img.crossOrigin = 'anonymous'
       img.referrerPolicy = 'no-referrer'
       img.onload = () => {
-        let { width, height } = options as Required<WaterMarkOptions>
+        let { width, height } = options as Required<WatermarkOptions>
         if (!width && !height) {  // 都不存在
           width = img.width
           height = img.height
@@ -139,7 +139,7 @@ export function getWaterMarkBase64Url(options: Required<WaterMarkOptions>) {
         configCanvas({ width, height })
         ctx.drawImage(img, -width / 2, -height / 2, width, height)
         return resolve({
-          waterMarkBase64Url: canvas.toDataURL(),
+          watermarkBase64Url: canvas.toDataURL(),
           width,
           height
         })
@@ -153,108 +153,77 @@ export function getWaterMarkBase64Url(options: Required<WaterMarkOptions>) {
   return image ? drawImage() : drawText()
 }
 
-export default class WaterMark {
-  public options: Required<WaterMarkOptions> | null
+export default class Watermark {
   private mutationObserver: MutationObserver | null = null
-  public containerEl: HTMLElement | null = null
-  public waterMarkEl: HTMLElement | null = null
-  private visibleStatus = false
 
-  constructor(options: WaterMarkOptions) {
+  public options: Required<WatermarkOptions> | null
+  public watermarkEl: HTMLElement | null = null
+  
+  constructor(options: WatermarkOptions) {
     this.options = this.mergeOptions(options)
-    this.containerEl = this.options.getContainer()
   }
 
   /**
-   * 绘制水印
+   * 绘制水印，在调用之前如果已经绘制过水印则会先移除之前的水印
    */
-  async draw() {
-    const containerEl = this.containerEl,
-      options = this.options
-    if (!containerEl || !options) return
-    this.visibleStatus = true
-    if (this.mutationObserver) {
-      // 销毁
-      this.mutationObserver.disconnect()
-      this.removeWaterMarkEl()
-      // this.waterMarkEl && this.waterMarkEl.remove()
-      // this.waterMarkEl = null
+   draw = async(newOptions?: WatermarkOptions) => {
+    if (newOptions) {
+      this.options = this.mergeOptions(newOptions)
     }
-    const { waterMarkBase64Url, width, height } = await getWaterMarkBase64Url(options)
-    const { zIndex, gap, offset } = options as Required<WaterMarkOptions>
-    const newWaterMarkEl = document.createElement('div')
-    newWaterMarkEl.setAttribute('style', `
-      position: absolute;
-      z-index: ${zIndex};
-      left: ${offset[0] || 0}px;
-      top: ${offset[1] || 0}px;
-      width: calc(100% - ${offset[0] || 0}px);
-      height: calc(100% - ${offset[1] || 0}px);
-      background-position: 0 0;
-      background-repeat: repeat;
-      background-size: ${gap[0] + width}px ${gap[1] + height}px;
-      background-image: url(${waterMarkBase64Url});
-      pointer-events: none;
-    `)
+    const options = this.options
+    if (!options) return;
+    const containerEl = options.getContainer()
+    if (!containerEl) return;
 
-    this.waterMarkEl = newWaterMarkEl
-    containerEl.append(newWaterMarkEl)
-    this.observe()
-  }
-
-  /**
-   * 隐藏水印
-   */
-  hidden() {
-    if (!this.waterMarkEl || !this.visibleStatus) return;
-    this.visibleStatus = false
-    this.disconnect()
-    this.waterMarkEl.style.display = 'none'
-  }
-
-  /**
-   * 显示水印
-   */
-  show() {
-    if (!this.waterMarkEl || this.visibleStatus) return;
-    this.visibleStatus = true
-    this.waterMarkEl.style.display = 'block'
+    const { watermarkBase64Url, width, height } = await getWatermarkBase64Url(options)
+    this.removeWatermarkEl()
+    this.appendWatermarkEl(containerEl, this.buildWatermarkEl(watermarkBase64Url, width, height, options))
     this.observe()
   }
 
   /**
    * 销毁水印
    */
-  destroy() {
-    this.disconnect()   //取消监测
-    this.removeWaterMarkEl()  //去掉当前容器下的水印元素
+  destroy = () => {
+    this.mutationObserver?.disconnect()  //取消监测
+    this.removeWatermarkEl()  //去掉当前容器下的水印元素
     this.mutationObserver = null
-    this.options = null
-    this.waterMarkEl = null
-    this.visibleStatus = false
   }
 
   /**
-   * 刷新水印（更新配置项并重新绘制）
+   * 创建水印元素
    */
-  fresh(options: WaterMarkOptions) {
-    this.updateOptions(options)
-    this.draw()
+  private buildWatermarkEl(
+    watermarkBase64Url: string,
+    width: number,
+    height: number, options: Required<WatermarkOptions>) {
+
+    const { zIndex, gap, offset } = options
+    const newWatermarkEl = document.createElement('div')
+    newWatermarkEl.setAttribute('style', `position: absolute;z-index: ${zIndex};left: ${offset[0] || 0}px;top: ${offset[1] || 0}px;width: calc(100% - ${offset[0] || 0}px);height: calc(100% - ${offset[1] || 0}px);background-position: 0 0;background-repeat: repeat;background-size: ${gap[0] + width}px ${gap[1] + height}px;background-image: url(${watermarkBase64Url});pointer-events: none;`)
+    return newWatermarkEl
   }
 
+  /**
+   * 向容器中添加水印元素
+   */
+  private appendWatermarkEl = (containerEl: HTMLElement, newWatermarkEl: HTMLDivElement) => {
+    this.watermarkEl = newWatermarkEl
+    containerEl.append(newWatermarkEl)
+  }
 
   /**
   * 移除水印元素
   */
-  private removeWaterMarkEl() {
-    const waterMarkEl = this.waterMarkEl,
-      containerEl = this.containerEl
-
-    if (waterMarkEl) {
-      if (containerEl && containerEl.contains(waterMarkEl)) {
-        containerEl.removeChild(waterMarkEl)
+  private removeWatermarkEl = () => {
+    this.mutationObserver?.disconnect()
+    const watermarkEl = this.watermarkEl
+    const containerEl = this.options?.getContainer()
+    if (watermarkEl) {
+      if (containerEl && containerEl.contains(watermarkEl)) {
+        containerEl.removeChild(watermarkEl)
       } else {
-        waterMarkEl.remove()
+        watermarkEl.remove()
       }
     }
   }
@@ -262,29 +231,29 @@ export default class WaterMark {
   /**
    * 监测水印是否被移除和修改
    */
-  private observe() {
+  private observe = () =>  {
     if (!this.mutationObserver) {
-      if (!this.waterMarkEl) return;
+      if (!this.watermarkEl) return;
       this.mutationObserver = new MutationObserver((mutations) => {
         const isChanged = mutations.some(mutation => {
           let flag = false
           if (mutation.removedNodes.length) {
-            flag = Array.from(mutation.removedNodes).some(node => node === this.waterMarkEl)
+            flag = Array.from(mutation.removedNodes).some(node => node === this.watermarkEl)
           }
-          if (mutation.attributeName === 'style' && mutation.target === this.waterMarkEl) {
+          if (mutation.attributeName === 'style' && mutation.target === this.watermarkEl) {
             flag = true
           }
           return flag
         })
         if (isChanged) {
-          this.removeWaterMarkEl()
+          this.removeWatermarkEl()
           this.draw()
         }
       })
     }
-
-    if (!this.mutationObserver || !this.containerEl) return;
-    this.mutationObserver!.observe(this.containerEl, {
+    const containerEl = this.options?.getContainer()
+    if (!this.mutationObserver || !containerEl) return;
+    this.mutationObserver!.observe(containerEl, {
       subtree: true,
       attributes: true,
       childList: true
@@ -292,17 +261,9 @@ export default class WaterMark {
   }
 
   /**
- * 停止监测
- */
-  private disconnect() {
-    if (!this.mutationObserver) return
-    this.mutationObserver.disconnect()
-  }
-
-  /**
    * 合并配置参数
    */
-  private mergeOptions(_options: Partial<WaterMarkOptions>) {
+  private mergeOptions = (_options: WatermarkOptions) => {
     const options = _options || {}
     const mergedOptions = {
       ...options,
@@ -313,28 +274,20 @@ export default class WaterMark {
 
       textAlign: options.textAlign || 'center',
       gap: [
-        parseNumber(options?.gap?.[0], defaultOptions.gap[0]),
-        parseNumber(options?.gap?.[1], defaultOptions.gap[1]),
+        parseNumber(options?.gap?.[0], defaultOptions?.gap?.[0]),
+        parseNumber(options?.gap?.[1], defaultOptions?.gap?.[1]),
       ],
       fontStyle: {
         ...defaultOptions.fontStyle,
         ...(options.fontStyle || {})
       },
       zIndex: options.zIndex || defaultOptions.zIndex,
-    } as Required<WaterMarkOptions>
+    } as Required<WatermarkOptions>
 
     mergedOptions['offset'] = [
-      parseNumber(mergedOptions?.offset?.[0], defaultOptions.offset[0]) as number,
-      parseNumber(mergedOptions?.offset?.[1] || mergedOptions?.offset?.[0], defaultOptions.offset[1]) as number,
+      parseNumber(mergedOptions?.offset?.[0], defaultOptions?.offset?.[0]) as number,
+      parseNumber(mergedOptions?.offset?.[1] || mergedOptions?.offset?.[0], defaultOptions?.offset?.[1]) as number,
     ]
     return mergedOptions
-  }
-
-  /**
-   * 更新配置选项
-   */
-  private updateOptions(options: WaterMarkOptions) {
-    this.options = this.mergeOptions(options)
-    this.containerEl = options.getContainer()
   }
 }
