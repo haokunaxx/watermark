@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #testBox {
+      position: relative;
+      width: 500px;
+      height: 500px;
+      margin: 100px auto;
+      border: 1px solid #ddd
+    }
+  </style>
+</head>
+
+<body>
+  <div id="testBox">
+    <h1>asdjahdknalkdhakld</h1>
+    <h2>adjlajdlajdlja</h2>
+    nihao
+    <button class="J_toggleWatermarkContentBtn">切换水印内容</button>
+    <button class="J_showWatermarkBtn">显示水印</button>
+    <button class="J_hiddenWatermarkBtn">隐藏水印</button>
+  </div>
+  <script src="./watermark.umd.js"></script>
+  <script type="text/javascript">
+    let content = ['jannkjdhachaoohkbcancmamc',
+        '哈啰 hello hi Halo 哈喽',
+        '你好我是？？',
+        '你好我有一个帽衫']
+
+    const getContainer = () => document.querySelector('#testBox')
+
+    const watermark = new Watermark({
+      content,
+      getContainer
+    })
+
+    watermark.draw()
+
+    document.querySelector('.J_toggleWatermarkContentBtn').addEventListener('click', () => {
+
+      content = ['这是新的水印']
+
+      watermark.draw({
+        content,
+        getContainer
+      })
+    })
+    document.querySelector('.J_showWatermarkBtn').addEventListener('click', () => {
+      watermark.draw({
+        content,
+        getContainer
+      })
+    })
+    document.querySelector('.J_hiddenWatermarkBtn').addEventListener('click', () => {
+      watermark.destroy()
+    })
+  </script>
+</body>
+
+</html>
