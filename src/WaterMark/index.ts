@@ -103,7 +103,8 @@ function getWatermarkBase64Url(options: Required<WatermarkOptions>) {
 
     content.forEach((item, index) => {
       const itemSizeInfo = measureSize.contentSizeInfoList[index]
-      const startX = textAlign === "center" ? -itemSizeInfo.width / 2 : 12,
+      // Fix: textAlign为left时，绘制文本的 x 取值不正确。
+      const startX = textAlign === "center" ? -itemSizeInfo.width / 2 : -measureSize.contentWidth / 2,
         startY = -(options.height || measureSize.contentHeight) / 2 + itemSizeInfo.height * index
 
       ctx.fillText(item, startX, startY,
@@ -272,7 +273,7 @@ export default class Watermark {
     const mergedOptions = {
       ...options,
       getContainer: options.getContainer!,
-      rotate: options.rotate || defaultOptions.rotate,
+      rotate: options.rotate ?? defaultOptions.rotate,
       width: parseNumber(options.width, undefined),
       height: parseNumber(options.height, undefined),
 

@@ -11,7 +11,7 @@
 ```
 
 ## 使用
-vue2/3、react、javascript 的不同使用示例都在 `/examples/*` 目录下。
+vue2/3、react、javascript 的不同使用示例都在[watermark仓库](https://github.com/haokunaxx/watermark) 的`/examples/*` 目录下。
 进入各个目录（js 目录除外，可直接打开 index.html）后执行以下命令启动示例项目查看。
 
 ```javascript

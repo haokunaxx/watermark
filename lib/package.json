@@ -1,6 +1,6 @@
 {
   "name": "watermark-core",
-  "version": "1.1.2",
+  "version": "1.1.4",
   "description": "Watermark components that can be manually controlled, updated, and destroyed. Supports text watermarking, multi-line text watermarking, and image watermarking. Supports watermark rotation and automatically calculates the watermark size according to the text watermark content. Any js framework is available.",
   "main": "watermark.es.js",
   "types": "watermark.es.d.ts",
